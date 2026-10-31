@@ -3,7 +3,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
-
+from modules.file_processor import analyze_uploaded_file
+from modules.detector import detect_anomalies, get_detection_summary
 # =========================================================
 # CHAIN SENTINEL AI - MAIN APPLICATION
 # Initial dashboard version
@@ -407,17 +408,20 @@ elif page == "Live Blockchain":
 # =========================================================
 # FILE INVESTIGATION
 # =========================================================
+# =========================================================
+# FILE INVESTIGATION
+# =========================================================
 
 elif page == "File Investigation":
 
     st.markdown("## 📁 Universal File Investigation")
     st.write(
-        "Upload a supported file for investigation. "
-        "The complete extraction and security analysis engine will be added next."
+        "Upload a supported document, spreadsheet, image, "
+        "network capture, smart contract or archive."
     )
 
     supported_extensions = [
-        "pdf", "docx", "txt", "csv", "xlsx", "xls",
+        "pdf", "docx", "txt", "rtf", "csv", "xlsx", "xls",
         "json", "xml", "log", "syslog", "sol",
         "pcap", "pcapng", "png", "jpg", "jpeg", "zip"
     ]
@@ -425,16 +429,103 @@ elif page == "File Investigation":
     uploaded_file = st.file_uploader(
         "Choose an investigation file",
         type=supported_extensions,
-        help="Maximum upload size is configured in Streamlit settings."
+        help="Maximum file size: 50 MB."
     )
 
     if uploaded_file is not None:
-        st.success(f"File selected: {uploaded_file.name}")
-        st.write(f"File size: {uploaded_file.size:,} bytes")
-        st.info(
-            "File selection is working. Secure validation, extraction, "
-            "hashing and analysis will be implemented in the file processor module."
-        )
+
+        st.markdown("### Selected evidence")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write("**Filename**")
+            st.write(uploaded_file.name)
+
+        with col2:
+            st.write("**File size**")
+            st.write(f"{uploaded_file.size / 1024:.2f} KB")
+
+        if st.button("🔍 Analyse uploaded file", type="primary"):
+
+            try:
+                with st.spinner("Validating and analysing evidence..."):
+
+                    result = analyze_uploaded_file(uploaded_file)
+
+                st.success("File processing completed.")
+
+                st.markdown("### Evidence information")
+
+                m1, m2, m3 = st.columns(3)
+
+                m1.metric("File format", result["format"])
+                m2.metric(
+                    "Extracted characters",
+                    f'{result["characters_extracted"]:,}'
+                )
+                m3.metric(
+                    "File size",
+                    f'{result["size_bytes"] / 1024:.1f} KB'
+                )
+
+                st.markdown("### SHA-256 evidence fingerprint")
+
+                st.code(result["sha256"], language="text")
+
+                st.caption(
+                    "This hash identifies the exact uploaded file bytes. "
+                    "It does not independently prove that the file is authentic."
+                )
+
+                st.markdown("### Extracted security indicators")
+
+                indicators = result["indicators"]
+
+                for category, values in indicators.items():
+
+                    with st.expander(
+                        f"{category} ({len(values)})"
+                    ):
+
+                        if values:
+                            for value in values:
+                                st.write(f"• {value}")
+                        else:
+                            st.caption("No indicators extracted.")
+
+                st.markdown("### Extracted file content")
+
+                with st.expander("View extracted content"):
+
+                    st.text_area(
+                        "Extracted evidence",
+                        value=result["extracted_text"],
+                        height=300,
+                        disabled=True
+                    )
+
+                st.warning(result["warning"])
+
+                # Keep latest investigation in this session.
+                st.session_state["last_file_investigation"] = {
+                    "filename": result["filename"],
+                    "format": result["format"],
+                    "sha256": result["sha256"],
+                    "characters_extracted": result[
+                        "characters_extracted"
+                    ],
+                    "indicators": result["indicators"]
+                }
+
+            except Exception as exc:
+
+                st.error(f"File investigation failed: {exc}")
+
+                st.info(
+                    "Check that the file is valid, supported and "
+                    "within the configured size limits."
+                )
 
 
 # =========================================================

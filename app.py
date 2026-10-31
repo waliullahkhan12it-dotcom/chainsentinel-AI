@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 from modules.file_processor import analyze_uploaded_file
 from modules.detector import detect_anomalies, get_detection_summary
-from modules.detector import detect_anomalies, get_detection_summary
+
 # =========================================================
 # CHAIN SENTINEL AI - MAIN APPLICATION
 # Initial dashboard version

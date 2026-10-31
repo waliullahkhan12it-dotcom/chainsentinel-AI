@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 from modules.file_processor import analyze_uploaded_file
 from modules.detector import detect_anomalies, get_detection_summary
+from modules.detector import detect_anomalies, get_detection_summary
 # =========================================================
 # CHAIN SENTINEL AI - MAIN APPLICATION
 # Initial dashboard version
@@ -556,40 +557,103 @@ elif page == "AI Security Analyst":
 # ANOMALY DETECTION
 # =========================================================
 
+# =========================================================
+# ANOMALY DETECTION
+# =========================================================
+
 elif page == "Anomaly Detection":
 
-    st.markdown("## 🔍 Anomaly Detection Centre")
+    st.markdown("## 🔍 AI Anomaly Detection Centre")
 
-    st.info(
-        "The Isolation Forest model and explainable detection rules "
-        "will be implemented in the detector module."
+    st.write(
+        "Identify unusual transaction patterns using "
+        "Isolation Forest and explainable security rules."
     )
 
-    st.markdown("### Sample transaction data")
-    st.dataframe(transactions, use_container_width=True, hide_index=True)
-
-
-# =========================================================
-# WALLET INTELLIGENCE
-# =========================================================
-
-elif page == "Wallet Intelligence":
-
-    st.markdown("## 👛 Wallet Intelligence")
-
-    wallet = st.text_input(
-        "Ethereum wallet address",
-        placeholder="Enter a 0x... wallet address"
+    st.warning(
+        "The current analysis uses illustrative demonstration "
+        "transactions, not live Ethereum data."
     )
 
-    if st.button("Prepare wallet investigation"):
-        if wallet.startswith("0x") and len(wallet) == 42:
-            st.info(
-                "Address format looks valid. Blockchain lookup is not connected yet."
+    contamination = st.slider(
+        "Expected anomaly proportion",
+        min_value=0.01,
+        max_value=0.30,
+        value=0.10,
+        step=0.01,
+        help="This controls the Isolation Forest model's expected "
+             "proportion of unusual records."
+    )
+
+    if st.button("🚀 Run anomaly detection", type="primary"):
+
+        try:
+
+            with st.spinner("Analysing transaction patterns..."):
+
+                results = detect_anomalies(
+                    transactions,
+                    contamination=contamination
+                )
+
+                summary = get_detection_summary(results)
+
+            st.success("Anomaly analysis completed.")
+
+            c1, c2, c3, c4 = st.columns(4)
+
+            c1.metric("Records analysed", summary["total"])
+            c2.metric("ML anomalies", summary["anomalies"])
+            c3.metric("High / Critical", summary["high_risk"])
+            c4.metric("Critical findings", summary["critical"])
+
+            st.markdown("### Risk classification")
+
+            st.dataframe(
+                results,
+                use_container_width=True,
+                hide_index=True
             )
-        else:
-            st.error("Enter a valid 42-character Ethereum address.")
 
+            st.markdown("### Risk distribution")
+
+            risk_counts = (
+                results["risk_level"]
+                .value_counts()
+                .reset_index()
+            )
+
+            risk_counts.columns = ["Risk", "Count"]
+
+            fig = px.pie(
+                risk_counts,
+                names="Risk",
+                values="Count",
+                hole=0.55,
+                color="Risk",
+                color_discrete_map=risk_colors,
+                title="Detected Risk Levels"
+            )
+
+            fig.update_layout(
+                template="plotly_dark",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font_color="#DCEBFA"
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+            st.info(
+                "Anomaly scores are relative to this dataset. "
+                "They are not probabilities of fraud."
+            )
+
+        except Exception as exc:
+
+            st.error(f"Detection failed: {exc}")
 
 # =========================================================
 # ANALYTICS

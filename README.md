@@ -41,3 +41,27 @@ Under development.
 ## Deployment
 
 The application will be deployed using Streamlit Community Cloud.
+## Universal File Investigation
+
+Supported formats:
+
+- PDF and DOCX documents
+- TXT and RTF text files
+- CSV, XLSX and XLS spreadsheets
+- JSON and XML data
+- LOG and SYSLOG files
+- Solidity smart contracts
+- PCAP and PCAPNG network captures
+- PNG, JPG and JPEG images with OCR
+- ZIP archives with safe in-memory inspection
+
+Security controls:
+
+- SHA-256 evidence hashing
+- File size validation
+- File signature checks
+- Safe archive inspection
+- Archive nesting and expansion limits
+- No execution of uploaded files
+
+Extracted indicators are investigation leads and do not establish malicious activity by themselves.

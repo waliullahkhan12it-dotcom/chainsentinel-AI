@@ -5,6 +5,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 from modules.file_processor import analyze_uploaded_file
 from modules.detector import detect_anomalies, get_detection_summary
+from modules.ai_analyst import (
+    explain_findings,
+    ask_security_question
+)
 
 # =========================================================
 # CHAIN SENTINEL AI - MAIN APPLICATION
@@ -406,9 +410,7 @@ elif page == "Live Blockchain":
     st.write("- Pending transactions when supported by the provider")
 
 
-# =========================================================
-# FILE INVESTIGATION
-# =========================================================
+
 # =========================================================
 # FILE INVESTIGATION
 # =========================================================
@@ -537,25 +539,79 @@ elif page == "AI Security Analyst":
 
     st.markdown("## 🤖 AI Security Analyst")
 
-    st.info(
-        "Groq API integration will be configured in a later development step."
+    st.write(
+        "Ask questions about detected blockchain "
+        "anomalies and receive evidence-based explanations."
     )
 
-    question = st.text_area(
-        "Investigation question",
-        placeholder="Example: Explain the security significance of an unusually large transfer."
+    findings = st.session_state.get(
+        "last_detection_results", []
     )
 
-    if st.button("Prepare question", type="primary"):
-        if question.strip():
-            st.success("Question received. The AI analyst is not connected yet.")
-        else:
-            st.warning("Please enter a question first.")
+    if not findings:
 
+        st.info(
+            "First run Anomaly Detection to create "
+            "investigation evidence."
+        )
 
-# =========================================================
-# ANOMALY DETECTION
-# =========================================================
+    else:
+
+        st.success(
+            f"{len(findings)} investigation records available."
+        )
+
+        if st.button("Generate AI Investigation Report"):
+
+            try:
+
+                with st.spinner("AI analyst is investigating..."):
+
+                    report = explain_findings(findings)
+
+                st.markdown("### Investigation Report")
+                st.markdown(report)
+
+                st.session_state["ai_investigation_report"] = report
+
+            except Exception as exc:
+
+                st.error(str(exc))
+
+        st.markdown("### Ask the AI Security Analyst")
+
+        question = st.text_area(
+            "Your investigation question",
+            placeholder=(
+                "Why were these transactions identified "
+                "as suspicious?"
+            )
+        )
+
+        if st.button("Ask AI Analyst"):
+
+            if not question.strip():
+
+                st.warning("Please enter a question.")
+
+            else:
+
+                try:
+
+                    with st.spinner("Preparing answer..."):
+
+                        answer = ask_security_question(
+                            question,
+                            findings
+                        )
+
+                    st.markdown("### AI Analyst Response")
+                    st.markdown(answer)
+
+                except Exception as exc:
+
+                    st.error(str(exc))
+
 
 # =========================================================
 # ANOMALY DETECTION
@@ -595,6 +651,9 @@ elif page == "Anomaly Detection":
                     transactions,
                     contamination=contamination
                 )
+                st.session_state["last_detection_results"] = (
+    results.to_dict(orient="records")
+)
 
                 summary = get_detection_summary(results)
 
